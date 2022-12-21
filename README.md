@@ -43,6 +43,6 @@ Checks for added or deleted entries on the original based on the `<data key={VAL
 
 The output of the translation is placed in the same directory as the target file is. The files formats that it accounts for are `.resx` and `.cs` files.
 
-For every original `.cs` file an empty file, with the language code appended in it's name, is created. Example: if a target language is Macedonian and a `Common.Designer.cs` file is found, a corresponding `Common.Designer.mk.cs` empty file is created.
+For every original `.cs` file an empty file, with the language code appended in it's name, is created. Example: if a target language is Macedonian and a `Common.Designer.cs` file is found, a corresponding `Common.Designer.mk.cs`. The contents of the file are the same, except for the folloring setting `GeneratedCodeAttribute`. For example if it was `App.Resources.Common` it would be changed to `App.Resources.Common.lt`
 
 For every original `.resx` file a file with modified `<data />` tags is created, with the language code appended in it's name. Example: if a target language is Macedonian and a `Common.resx` file is found, a corresponding `Common.mk.resx` file is created, which has the same structure, but different(translated) `<data />` tags.

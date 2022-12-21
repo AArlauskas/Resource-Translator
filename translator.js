@@ -21,12 +21,20 @@ function isCsFile(file) {
   return fileExtension === "cs";
 }
 
-function createEmptyFile(route, language) {
+function createCsFile(route, language) {
   const ending = route.split(".").pop();
-  const routeWithoutEnding = route.split(".").slice(0, -1).join(".");
-  const fileName = `${routeWithoutEnding}.${language}.${ending}`;
-  console.log(`creating empty ${fileName}`);
-  fs.closeSync(fs.openSync(fileName, "w"));
+  const originalFilename = route.split("/").pop();
+  const originalFileWithoutEnding = originalFilename.split(".").slice(0, -1);
+  let contents = fs.readFileSync(route).toString();
+  contents = contents.replace(
+    `Resources.${originalFileWithoutEnding[0]}`,
+    `Resources.${originalFileWithoutEnding[0]}.${language}`
+  );
+  const fileRoute = route.replace(
+    originalFilename,
+    `${originalFileWithoutEnding.join(".")}.${language}.${ending}`
+  );
+  fs.writeFileSync(fileRoute, contents);
 }
 
 function isTranslatedFile(file) {
@@ -57,7 +65,9 @@ async function translateFreshResxFile(route, language) {
   const destinationRoute = `${routeWithoutEnding}.${language}.resx`;
 
   const xml = fs.readFileSync(route).toString();
-  const $ = cheerio.load(xml, null, false);
+  const $ = cheerio.load(xml, {
+    xmlMode: true,
+  });
   const valuesToTranslate = $("data").find("value");
   console.log(
     `translating ${valuesToTranslate.length} values to ${language} in ${route}`
@@ -68,7 +78,8 @@ async function translateFreshResxFile(route, language) {
     $(valueXml).text(translation);
   }
 
-  fs.writeFileSync(destinationRoute, $.xml());
+  const output = $.xml().split("\n").slice(1).join("\n");
+  fs.writeFileSync(destinationRoute, output);
 }
 
 async function translateOnlyChnagesResxFile(route, language) {
@@ -78,8 +89,12 @@ async function translateOnlyChnagesResxFile(route, language) {
   const originalXml = fs.readFileSync(route).toString();
   const translatedXml = fs.readFileSync(destinationRoute).toString();
 
-  const $original = cheerio.load(originalXml, null, false);
-  const $translated = cheerio.load(translatedXml, null, false);
+  const $original = cheerio.load(originalXml, {
+    xmlMode: true,
+  });
+  const $translated = cheerio.load(translatedXml, {
+    xmlMode: true,
+  });
 
   const originalData = $original("data");
   const translatedData = $translated("data");
@@ -112,7 +127,9 @@ async function translateOnlyChnagesResxFile(route, language) {
   }
 
   //write the changes
-  fs.writeFileSync(destinationRoute, $translated.xml());
+  const output = $translated.xml().split("\n").slice(1).join("\n");
+
+  fs.writeFileSync(destinationRoute, output);
 }
 
 function freshTranslate() {
@@ -121,7 +138,7 @@ function freshTranslate() {
     for (let file of files) {
       for (let language of languages) {
         if (isCsFile(file) && !isTranslatedFile(file)) {
-          createEmptyFile(`${route}/${file}`, language);
+          createCsFile(`${route}/${file}`, language);
         }
         if (isResxFile(file) && !isTranslatedFile(file)) {
           translateFreshResxFile(`${route}/${file}`, language);
@@ -147,7 +164,7 @@ function modifiedTranslate() {
       for (let language of languages) {
         if (!isTranslatedFile(file)) {
           if (isCsFile(file)) {
-            createEmptyFile(`${route}/${file}`, language);
+            createCsFile(`${route}/${file}`, language);
           }
           if (isResxFile(file)) {
             if (hasTranslatedResxFile(files, file, language)) {
